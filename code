@@ -1,0 +1,146 @@
+#Backend code
+import json
+import random
+
+# Memory Agent: Store user preferences
+memory = {}
+
+# Function to update memory
+def update_memory(user_id, key, value):
+    if user_id not in memory:
+        memory[user_id] = {}
+    memory[user_id][key] = value
+
+# User Interaction Agent
+def collect_preferences(user_id):
+    preferences = {}
+    print("Welcome to the One-Day Tour Planner!")
+    preferences["city"] = input("Which city would you like to visit? ")
+    preferences["start_time"] = input("What time would you like to start your day? (e.g., 9 AM) ")
+    preferences["end_time"] = input("What time would you like to end your day? (e.g., 6 PM) ")
+    preferences["budget"] = float(input("What is your budget for the day? (in your local currency) "))
+    preferences["interests"] = input("What are your interests? (e.g., historical sites, food, shopping) ").split(", ")
+    update_memory(user_id, "preferences", preferences)
+    return preferences
+
+# Itinerary Generation Agent
+def generate_itinerary(preferences):
+    # Mock data for popular attractions
+    attractions = {
+        "Rome": [
+            {"name": "Colosseum", "duration": "2 hours", "cost": 15, "category": "historical sites"},
+            {"name": "Roman Forum", "duration": "1.5 hours", "cost": 12, "category": "historical sites"},
+            {"name": "Pantheon", "duration": "1 hour", "cost": 0, "category": "historical sites"},
+            {"name": "Trevi Fountain", "duration": "45 minutes", "cost": 0, "category": "relaxing spots"},
+            {"name": "Piazza Navona", "duration": "1 hour", "cost": 0, "category": "food"}
+        ]
+    }
+    
+    city = preferences["city"]
+    user_interests = preferences["interests"]
+    budget = preferences["budget"]
+    
+    # Filter attractions based on interests
+    selected_attractions = [a for a in attractions.get(city, []) if a["category"] in user_interests]
+    
+    # Generate itinerary
+    itinerary = []
+    total_cost = 0
+    for attraction in selected_attractions:
+        if total_cost + attraction["cost"] <= budget:
+            itinerary.append(attraction)
+            total_cost += attraction["cost"]
+    
+    return itinerary, total_cost
+
+# Optimization Agent
+def optimize_itinerary(itinerary, preferences):
+    start_time = preferences["start_time"]
+    end_time = preferences["end_time"]
+    duration = len(itinerary)  # Mocked simple optimization
+    
+    return {
+        "itinerary": itinerary,
+        "start_time": start_time,
+        "end_time": end_time,
+        "optimized_duration": f"{duration} hours"
+    }
+
+# Memory Retrieval
+def retrieve_memory(user_id):
+    return memory.get(user_id, {})
+
+
+
+
+
+#Frontend code
+import streamlit as st
+
+# Ensure session state is initialized properly for 'memory' and 'preferences'
+if "memory" not in st.session_state:
+    st.session_state["memory"] = {}  # Initialize 'memory' as a dictionary
+
+st.title("One-Day Tour Planning Application")
+
+user_id = "user_123"  # Mock user ID
+
+# Step 1: Collect Preferences
+if "preferences" not in st.session_state["memory"]:  # Check if 'preferences' exist in 'memory'
+    st.subheader("Step 1: Collect Preferences")
+
+    # Collect user inputs
+    city = st.text_input("Which city would you like to visit?")
+    start_time = st.text_input("What time would you like to start your day? (e.g., 9 AM)")
+    end_time = st.text_input("What time would you like to end your day? (e.g., 6 PM)")
+    budget = st.number_input("What is your budget for the day?", min_value=0.0)
+    interests = st.multiselect(
+        "What are your interests?",
+        ["historical sites", "food", "shopping", "relaxing spots", "adventure"]
+    )
+
+    if st.button("Save Preferences"):
+        # Save preferences to session state
+        preferences = {
+            "city": city,
+            "start_time": start_time,
+            "end_time": end_time,
+            "budget": budget,
+            "interests": interests
+        }
+        st.session_state["memory"]["preferences"] = preferences  # Save preferences in memory
+        st.success("Preferences saved!")
+
+# Step 2: Generate Itinerary
+if "preferences" in st.session_state["memory"]:
+    preferences = st.session_state["memory"]["preferences"]
+    st.subheader("Step 2: Generated Itinerary")
+
+    # Mock function to generate itinerary based on preferences
+    def generate_itinerary(preferences):
+        # Example attractions
+        attractions = [
+            {"name": "Colosseum", "duration": "2 hours", "cost": 15},
+            {"name": "Roman Forum", "duration": "1.5 hours", "cost": 12},
+            {"name": "Pantheon", "duration": "1 hour", "cost": 0},
+        ]
+        # Simplified selection logic based on budget
+        budget = preferences["budget"]
+        selected_attractions = []
+        total_cost = 0
+        for attraction in attractions:
+            if total_cost + attraction["cost"] <= budget:
+                selected_attractions.append(attraction)
+                total_cost += attraction["cost"]
+        return selected_attractions, total_cost
+
+    # Generate itinerary
+    itinerary, total_cost = generate_itinerary(preferences)
+    for stop in itinerary:
+        st.write(f"Stop: {stop['name']} | Duration: {stop['duration']} | Cost: {stop['cost']}")
+
+    st.write(f"Total Cost: {total_cost}")
+
+# Step 3: Optimize Itinerary (Optional)
+if st.button("Optimize Itinerary"):
+    st.write("Optimization feature will adjust your itinerary dynamically!")
